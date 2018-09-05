@@ -1,16 +1,24 @@
-#/usr/bin/python3
+#!/usr/bin/python
 
+import os.path as osp
 from collections import namedtuple
 
 Recipient = namedtuple('Recipient', ('address', 'name', 'data'))
+
+CONFIG = osp.join(osp.dirname(osp.abspath(__file__)), 'server.ini')
 
 def read_csv(path):
     '''Read the csv file of indented recipients.'''
     import csv
 
     with open(path, 'r') as f:
-        lst = [Recipient(address, name, data)
-               for address, name, *data in csv.reader(f)]
+        reader = csv.reader(f)
+        
+
+    
+        lst = [Recipient(row[0].strip(), row[1].strip(), row[2:])
+               for row in reader]
+        
     return lst
 
 def get_user():
@@ -21,36 +29,73 @@ def get_user():
     password = getpass.getpass()
     return address, username, password
 
-def get_server_info():
-    from configparser import ConfigParser
-    import os.path as osp
+def get_password():
+    '''Get the passwod if it has not been provided.'''
+    from getpass import getpass
+    return getpass()
 
-    path = osp.join(osp.dirname(osp.abspath(__file__)), 'server.ini')
+def get_username(sender):
+    '''Get the username to log into the server.'''
+    user = input('Username [sender addr]: ')
+    return user if user else sender
+
+def get_sender():
+    '''Get the sender email address.'''
+    return input('Email address: ')
+
+def update_from_config(parser, section, name):
+    '''Check the config file for settings.'''
+    try:
+        return parser.get(section, name)
+    except Exception:
+        return ''
+
+def send_emails(datafile, template, username, sender=None, password=None, host='', port=0):
+    '''Connect to the server and send emails.'''
+    try:
+        from configparser import ConfigParser
+    except ImportError:
+        from ConfigParser import ConfigParser
 
     parser = ConfigParser()
-    parser.read(path)
+    parser.read(CONFIG)
+    if not sender:
+        temp = update_from_config(parser, 'user', 'address')
+        sender = temp if temp else get_sender()
+    if not username:
+        temp = update_from_config(parser, 'user', 'username')
+        username = temp if temp else get_username(sender)
+    if not password:
+        temp = update_from_config(parser, 'user', 'password')
+        password = temp if temp else get_password()
+        del temp
 
-    host = parser['server']['host']
-    port = int(parser['server']['port'])
+    if not host:
+        host = update_from_config(parser, 'server', 'host')
+    if not port:
+        port = int(update_from_config(parser, 'server', 'port'))
 
-    return host, port
+    messages = construct_messages(read_csv(datafile),
+                                  get_template(template),
+                                  sender)
     
-
-
-def send_emails(sender, auth, messages, host='', port=0):
-    '''Connect to the server and send emails.'''
+    
     if port == 587:
         from smtplib import SMTP as SMTP
+        smpt = SMTP(host, port)
+        smtp.starttls()
     else:
         from smtplib import SMTP_SSL as SMTP
+        smtp = SMTP(host, port)
 
-    with SMTP(host, port) as smtp:
-        if port == 587:
-            smtp.starttls()
-        smtp.login(*auth)
+    
+    try:        
+        smtp.login(username, password)
 
         for addr, msg in messages.items():
             smtp.sendmail(sender, addr, msg)
+    finally:
+        smtp.quit()
 
 
 def get_template(path):
@@ -79,6 +124,9 @@ def main():
 
     parser = ArgumentParser()
 
+    parser.add_argument('-u','--username',
+                        help='Username to use when logging on to the server.')
+
     parser.add_argument('datafile',
                         help=('CSV file containing the addresses, '
                               'names, and data to be sent.'))
@@ -87,13 +135,8 @@ def main():
                               'user data.'))
     args = parser.parse_args()
 
-    host, port = get_server_info()
-    sender, username, password = get_user()
-
-    messages = construct_messages(read_csv(args.datafile),
-                                  get_template(args.template),
-                                  sender)
-    send_emails(sender, (username, password), messages, host=host, port=port)
+    
+    send_emails(args.datafile, args.template, args.username)
     
 
     

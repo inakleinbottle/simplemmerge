@@ -4,4 +4,4 @@ Subject: Test email
 
 Hello {},
 
-This is a test email. Here is the address to the github repository for this email program: {}
+This is a test email.
