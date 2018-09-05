@@ -1,8 +1,5 @@
 #/usr/bin/python3
 
-from smtplib import SMTP_SSL as SMTP
-from email.message import Message
-
 from collections import namedtuple
 
 Recipient = namedtuple('Recipient', ('address', 'name', 'data'))
@@ -34,7 +31,7 @@ def get_server_info():
     parser.read(path)
 
     host = parser['server']['host']
-    port = parser['server']['port']
+    port = int(parser['server']['port'])
 
     return host, port
     
@@ -42,8 +39,14 @@ def get_server_info():
 
 def send_emails(sender, auth, messages, host='', port=0):
     '''Connect to the server and send emails.'''
+    if port == 587:
+        from smtplib import SMTP as SMTP
+    else:
+        from smtplib import SMTP_SSL as SMTP
 
     with SMTP(host, port) as smtp:
+        if port == 587:
+            smtp.starttls()
         smtp.login(*auth)
 
         for addr, msg in messages.items():
