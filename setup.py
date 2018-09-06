@@ -11,10 +11,8 @@ setup(name='simplemmerge',
       long_description=open('README.md').read(),
       description='Simple mail merge program that formats a template file with entries from CSV.',
       py_modules=['mmerge'],
+      package_data={'' : ['*.txt', '*.ini']}
       entry_points={
         'console_scripts' : ['mmerge = mmerge:main']
       }
       )
-      
-      
-      

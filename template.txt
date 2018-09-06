@@ -1,0 +1,22 @@
+# Simple mail merge template
+# The lines starting with # will be automatically removed.
+# To add a replacement text marker, use $name where name is the name of the
+# field that should replace $name in the final email. Name tags can be used
+# more than once, but the order in which the first instance of each tag appears
+# should match the corresponding 'column' in the data file provided.
+
+#The sample template follows.
+
+To: $address
+From: $sender
+Bcc: $sender
+Subject: Test email
+
+Hello $name,
+
+This a test of a simple mail merge. You may wish to consult the README document,
+which can be found on the GitHub page: $github.
+
+Regards,
+
+Me
