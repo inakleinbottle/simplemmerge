@@ -86,8 +86,8 @@ def send_emails(datafile, template, username, sender=None,
         del temp
 
     if port == 587:
-        from smtplib import SMTP as SMTP
-        smpt = SMTP(host, port)
+        from smtplib import SMTP
+        smtp = SMTP(host, port)
         smtp.starttls()
     else:
         from smtplib import SMTP_SSL as SMTP
